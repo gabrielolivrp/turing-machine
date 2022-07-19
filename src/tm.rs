@@ -1,3 +1,4 @@
+// Types
 pub type State = &'static str;
 
 #[derive(Debug, Clone, PartialEq, Copy)]
@@ -31,6 +32,39 @@ pub struct Tm {
   pub transitions: Vec<Transition>,
 }
 
+#[derive(Debug, Clone)]
+pub struct Tape {
+  tape: Vec<Symbol>,
+  index: i16,
+  len: usize,
+}
+
+#[derive(Debug, Clone)]
+pub struct TmResult {
+  tape: Tape,
+  accepted: bool,
+  state: State,
+}
+
+// Implementations
+impl Transition {
+  pub fn new(
+    read_state: State,
+    read_symbol: Symbol,
+    write_state: State,
+    write_symbol: Symbol,
+    mov: Move,
+  ) -> Transition {
+    Transition {
+      read_state,
+      read_symbol,
+      write_state,
+      write_symbol,
+      mov,
+    }
+  }
+}
+
 impl Tm {
   pub fn new(
     states: Vec<State>,
@@ -55,31 +89,6 @@ impl Tm {
       .iter()
       .find(|transition| transition.read_state == state && transition.read_symbol == sym)
   }
-}
-
-impl Transition {
-  pub fn new(
-    read_state: State,
-    read_symbol: Symbol,
-    write_state: State,
-    write_symbol: Symbol,
-    mov: Move,
-  ) -> Transition {
-    Transition {
-      read_state,
-      read_symbol,
-      write_state,
-      write_symbol,
-      mov,
-    }
-  }
-}
-
-#[derive(Debug, Clone)]
-pub struct Tape {
-  tape: Vec<Symbol>,
-  index: i16,
-  len: usize,
 }
 
 impl Tape {
@@ -118,13 +127,6 @@ impl Tape {
   }
 }
 
-#[derive(Debug, Clone)]
-pub struct TmResult {
-  tape: Tape,
-  accepted: bool,
-  state: State,
-}
-
 impl TmResult {
   pub fn new(tape: Tape, state: State) -> TmResult {
     TmResult {
@@ -135,6 +137,7 @@ impl TmResult {
   }
 }
 
+// Machine evaluation
 pub fn execute_tm<'a>(tm: Tm, inp: &'a str) -> TmResult {
   let tape = Tape::new(inp);
   let mut result = TmResult::new(tape, tm.initial_state);
