@@ -1,4 +1,4 @@
-pub type State<'a> = &'a str;
+pub type State = &'static str;
 
 #[derive(Debug, Clone, PartialEq, Copy)]
 pub enum Symbol {
@@ -14,31 +14,31 @@ pub enum Move {
 }
 
 #[derive(Debug, Clone)]
-pub struct Transition<'a> {
-  pub read_state: State<'a>,
+pub struct Transition {
+  pub read_state: State,
   pub read_symbol: Symbol,
-  pub write_state: State<'a>,
+  pub write_state: State,
   pub write_symbol: Symbol,
   pub mov: Move,
 }
 
 #[derive(Debug)]
-pub struct Tm<'a> {
-  pub states: Vec<State<'a>>,
+pub struct Tm {
+  pub states: Vec<State>,
   pub alphabet: Vec<Symbol>,
-  pub initial_state: State<'a>,
-  pub final_states: Vec<State<'a>>,
-  pub transitions: Vec<Transition<'a>>,
+  pub initial_state: State,
+  pub final_states: Vec<State>,
+  pub transitions: Vec<Transition>,
 }
 
-impl<'a> Tm<'a> {
+impl Tm {
   pub fn new(
-    states: Vec<State<'a>>,
+    states: Vec<State>,
     alphabet: &str,
-    initial_state: State<'a>,
-    final_states: Vec<State<'a>>,
-    transitions: Vec<Transition<'a>>,
-  ) -> Tm<'a> {
+    initial_state: State,
+    final_states: Vec<State>,
+    transitions: Vec<Transition>,
+  ) -> Tm {
     let alphabet: Vec<Symbol> = alphabet.chars().map(|x| Symbol::Sym(x)).collect();
     Tm {
       states,
@@ -57,14 +57,14 @@ impl<'a> Tm<'a> {
   }
 }
 
-impl<'a> Transition<'a> {
+impl Transition {
   pub fn new(
-    read_state: State<'a>,
+    read_state: State,
     read_symbol: Symbol,
-    write_state: State<'a>,
+    write_state: State,
     write_symbol: Symbol,
     mov: Move,
-  ) -> Transition<'a> {
+  ) -> Transition {
     Transition {
       read_state,
       read_symbol,
@@ -75,7 +75,7 @@ impl<'a> Transition<'a> {
   }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Tape {
   tape: Vec<Symbol>,
   index: i16,
@@ -118,19 +118,40 @@ impl Tape {
   }
 }
 
-pub fn execute_tm(tm: Tm, inp: &str) {
-  let mut state: State = tm.initial_state;
-  let mut tape = Tape::new(inp);
+#[derive(Debug, Clone)]
+pub struct TmResult {
+  tape: Tape,
+  accepted: bool,
+  state: State,
+}
 
-  while let Some(transition) = tm.get_transition(state, tape.focus()) {
-    state = transition.write_state;
-    tape.write(transition.write_symbol);
+impl TmResult {
+  pub fn new(tape: Tape, state: State) -> TmResult {
+    TmResult {
+      tape,
+      state,
+      accepted: false,
+    }
+  }
+}
+
+pub fn execute_tm<'a>(tm: Tm, inp: &'a str) -> TmResult {
+  let tape = Tape::new(inp);
+  let mut result = TmResult::new(tape, tm.initial_state);
+
+  while let Some(transition) = tm.get_transition(result.state, result.tape.focus()) {
+    result.state = transition.write_state;
+    result.tape.write(transition.write_symbol);
     match transition.mov {
-      Move::Left => tape.move_left(),
-      Move::Right => tape.move_right(),
+      Move::Left => result.tape.move_left(),
+      Move::Right => result.tape.move_right(),
       _ => {}
     }
   }
 
-  println!("{:?}", tape);
+  if tm.final_states.contains(&result.state) {
+    result.accepted = true;
+  }
+
+  result
 }
